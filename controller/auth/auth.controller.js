@@ -5,7 +5,6 @@ const User = require("../../models/User.model");
 // register
 const registerUser = async (req, res) => {
     const { username, email, password } = req.body;
-
     try {
         const checkUser = await User.findOne({ email })
 
@@ -87,44 +86,44 @@ const loginUser = async (req, res) => {
 
     } catch (e) {
         console.log(e);
-    res.status(500).json({
-      success: false,
-      message: "Some error occured",
-    });
+        res.status(500).json({
+            success: false,
+            message: "Some error occured",
+        });
 
     }
 }
 
 // logout
-const logoutUser = async ( req, res ) => {
+const logoutUser = async (req, res) => {
     res.clearCookie("token").json({
         success: true,
-        message : 'Logged Out!'
+        message: 'Logged Out!'
     })
 
 }
-
 // auth-middleware
 const authMiddleWare = async (req, res, next) => {
-    const token = req.cookie.token;
-
-    if(!token) {
-        res.status(401).json({
+    const token = req.cookies?.token; // Safely access token
+    if (!token) {
+        return res.status(401).json({
             success: false,
-            message : "Unauthorised User"
-        })
-
-        try {
-            const decoded = jwt.verify(token, process.env.CLIENT_SECRET_KEY);
-            req.user = decoded;
-            next();
-          } catch (error) {
-            res.status(401).json({
-              success: false,
-              message: "Unauthorised user!",
-            });
-          }
+            message: 'Unauthorized user: No token provided',
+        });
     }
-}
+
+    try {
+        const decoded = jwt.verify(token, process.env.CLIENT_SECRET_KEY);
+        req.user = decoded; // Attach decoded payload to req.user
+        next();
+    } catch (error) {
+        console.error('Token verification failed:', error.message);
+        return res.status(401).json({
+            success: false,
+            message: 'Unauthorized user: Invalid token',
+        });
+    }
+};
+
 
 module.exports = { registerUser, loginUser, logoutUser, authMiddleWare }
